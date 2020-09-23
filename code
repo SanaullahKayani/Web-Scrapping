@@ -1,1 +1,151 @@
+# import our libraries
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
+from bs4.element import Comment
+import urllib.request
+df=pandas.read_excel("C:/Users/sunny/OneDrive/Desktop/web_scrapping/short_file.xlsx")
+def ertract_data(CIK_no):
+    # base URL for the SEC EDGAR browser
+    endpoint = r"https://www.sec.gov/cgi-bin/browse-edgar"
 
+    # define our parameters dictionary
+    param_dict = {'action':'getcompany',
+                  'CIK':CIK_no,
+                  'type':'10-k',
+                  'dateb':'20190101',
+                  'owner':'exclude',
+                  'start':'',
+                  'output':'',
+                  'count':'100'}
+
+    # request the url, and then parse the response.
+    response = requests.get(url = endpoint, params = param_dict)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # find the document table with our data
+    doc_table = soup.find_all('table', class_='tableFile2')
+
+    # define a base url that will be used for link building.
+    base_url_sec = r"https://www.sec.gov"
+
+    master_list = []
+
+    # loop through each row in the table.
+    for row in doc_table[0].find_all('tr')[0:3]:
+
+        # find all the columns
+        cols = row.find_all('td')
+
+        # if there are no columns move on to the next row.
+        if len(cols) != 0:        
+
+            # grab the text
+            filing_type = cols[0].text.strip()                 
+            filing_date = cols[3].text.strip()
+            filing_numb = cols[4].text.strip()
+
+            # find the links
+            filing_doc_href = cols[1].find('a', {'href':True, 'id':'documentsbutton'})       
+            filing_int_href = cols[1].find('a', {'href':True, 'id':'interactiveDataBtn'})
+            filing_num_href = cols[4].find('a')
+
+            # grab the the first href
+            if filing_doc_href != None:
+                filing_doc_link = base_url_sec + filing_doc_href['href'] 
+            else:
+                filing_doc_link = 'no link'
+
+            # grab the second href
+            if filing_int_href != None:
+                filing_int_link = base_url_sec + filing_int_href['href'] 
+            else:
+                filing_int_link = 'no link'
+
+            # grab the third href
+            if filing_num_href != None:
+                filing_num_link = base_url_sec + filing_num_href['href'] 
+            else:
+                filing_num_link = 'no link'
+
+            # create and store data in the dictionary
+            file_dict = {}
+            file_dict['file_type'] = filing_type
+            file_dict['file_number'] = filing_numb
+            file_dict['file_date'] = filing_date
+            file_dict['links'] = {}
+            file_dict['links']['documents'] = filing_doc_link
+            file_dict['links']['interactive_data'] = filing_int_link
+            file_dict['links']['filing_number'] = filing_num_link
+
+            # let the user know it's working
+             print('-'*100)        
+             print("Filing Type: " + filing_type)
+             print("Filing Date: " + filing_date)
+             print("Filing Number: " + filing_numb)
+             print("Document Link: " + filing_doc_link)
+             print("Filing Number Link: " + filing_num_link)
+             print("Interactive Data Link: " + filing_int_link)
+
+            # append dictionary to master list
+            master_list.append(file_dict)
+            
+    for report in master_list[0:]:   
+#         print('-'*100)
+#         print(report['links']['documents'])
+        print(report['links']['filing_number'])
+#         print(report['links']['interactive_data'])
+    
+    
+    # loop through to get the links from the dictionary
+    target_link=[]
+    for report in master_list[0:]:
+        target_link.append(report['links']['documents'])
+#         print('-'*100)
+#         print(report['links']['documents'])
+        
+    for i in target_link:
+        tar_URL2 = i
+        tar_page2 = requests.get(tar_URL2)
+
+        soup = BeautifulSoup(tar_page2.content, 'html.parser')
+        #print(soup)
+    
+    URL2 =target_link[1]
+    page2 = requests.get(URL2)
+
+    soup = BeautifulSoup(page2.content, 'html.parser')
+    
+    doc_link_list=[]
+    for i in target_link:
+        tar_URL = i
+        tar_page = requests.get(tar_URL)
+        soup = BeautifulSoup(tar_page.content, 'html.parser')
+        i=1
+        for link in soup.find_all("a"):   
+        #     print("Inner Text: {}".format(link.text))
+        #     print("Title: {}".format(link.get("title")))
+            if(i==10):
+                half_link=format(link.get("href"))
+                full_link="https://www.sec.gov"+half_link
+                doc_link_list.append(full_link)
+                #print("href: {}".format(link.get("href"))) 
+                print(format(link.get("href")))
+                print(full_link)
+                
+                EndURL =full_link
+                page10k = requests.get(EndURL)
+                soupe = BeautifulSoup(page10k.content, 'html.parser') 
+                indexCIK=(df[df['CIK']==CIK_no].index.values)
+                df.loc[[indexCIK[0]],['MDA']]=soupe.text
+#                 df.loc[[indexCIK[0]],['MDA']]="Your Data Here"
+            i=i+1
+    return(doc_link_list)
+
+
+data10K_file=[]
+for i in df['CIK']:
+    print("CIK:" )
+    data10K_file.append(ertract_data(i))
+data10K_file
