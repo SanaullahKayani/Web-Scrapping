@@ -1,4 +1,4 @@
-```markdown
+
 # SEC 10-K Data Scraper
 
 This project provides a Python script to extract and process data from the SEC's EDGAR system. The script uses company CIK numbers to fetch 10-K filing data and parses specific information for further analysis.
@@ -55,7 +55,7 @@ pip install requests pandas beautifulsoup4
 - The SEC website enforces rate limits; excessive requests may result in temporary blocking.
 
 ## File Structure
-```
+
 repo-name/
 │
 ├── short_file.xlsx    # Input Excel file with CIK numbers
