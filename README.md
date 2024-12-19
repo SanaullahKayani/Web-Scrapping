@@ -1,5 +1,3 @@
-Here is a `README.md` file for your GitHub repository:
-
 ```markdown
 # SEC 10-K Data Scraper
 
